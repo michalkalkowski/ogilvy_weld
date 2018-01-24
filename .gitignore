@@ -63,7 +63,8 @@ target/
 *.db
 *.rdb
 
-# Pycharm
+# 
+harm
 .idea
 
 # VS Code
@@ -76,4 +77,6 @@ target/
 .ipynb_checkpoints/
 
 # exclude data from source control by default
+.pyc
+.swp
 /data/
