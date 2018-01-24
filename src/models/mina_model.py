@@ -297,7 +297,7 @@ class MINA_weld(object):
             if points:
                 ax.plot(self.point_b[i, 0], self.point_b[i, 1], 'o',ms=4, c='black')
                 ax.plot(self.point_o[i, 0], self.point_o[i, 1], '^',ms=4, c='black')
-       if grid:
+        if grid:
             ax.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
         ax.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
