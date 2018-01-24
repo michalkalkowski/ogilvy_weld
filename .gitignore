@@ -79,4 +79,5 @@ harm
 # exclude data from source control by default
 .pyc
 .swp
+.py.swp
 /data/
