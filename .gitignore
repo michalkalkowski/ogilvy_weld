@@ -77,7 +77,7 @@ harm
 .ipynb_checkpoints/
 
 # exclude data from source control by default
-.pyc
-.swp
-.py.swp
+*.pyc
+*.swp
+*.py.swp
 /data/
