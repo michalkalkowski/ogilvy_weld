@@ -116,13 +116,17 @@ class MINA_weld(object):
         ---
         size: int, grid size in milimetres
         """
-        self.grid_size = size
+        self.grid_size = float(size)
         elements_x = int(np.ceil(self.c/self.grid_size))
         elements_y = int(np.ceil(self.a/self.grid_size))
-        seeds_x = self.grid_size/2 + np.arange(0, elements_x*self.grid_size, self.grid_size)
-        seeds_y = self.grid_size/2 + np.arange(0, elements_y*self.grid_size, self.grid_size)
+        seeds_x = np.arange(0, (elements_x + 1)*self.grid_size, self.grid_size)
+        seeds_y = np.arange(0, (elements_y + 1)*self.grid_size, self.grid_size)
         self.xx, self.yy = np.meshgrid(seeds_x, seeds_y)
-        self.xx += -self.c/2
+        self.xx += -self.c/2.
+        # Calculate the centroids
+        self.centro_x = ((self.xx[:, :-1] + self.xx[:, 1:])/2)[:-1, :]
+        self.centro_y = ((self.yy[:-1, :] + self.yy[1:, :])/2)[:, :-1]
+
 
     def get_chamfer_profile(self, y):
         """
@@ -234,15 +238,15 @@ class MINA_weld(object):
         """
 #         pass_assignments = -99 + np.zeros(xx.shape)
         # Prefedine array of thermal gradients with NaNs
-        self.alpha_g = np.nan*np.zeros(self.xx.shape)
+        self.alpha_g = np.nan*np.zeros(self.centro_x.shape)
         for this_pass in range(len(self.point_c)):
-            points_in = (np.where((self.yy > self.bottom_parabola(self.xx, this_pass)) & 
-                                  (self.yy < self.top_parabola(self.xx, this_pass))))
+            points_in = (np.where((self.centro_y > self.bottom_parabola(self.centro_x, this_pass)) &
+                                  (self.centro_y < self.top_parabola(self.centro_x, this_pass))))
 #             pass_assignments[points_in[0], points_in[1]] = this_pass
-            self.alpha_g[points_in[0], points_in[1]] = np.arctan((self.xx[points_in[0], points_in[1]] -
+            self.alpha_g[points_in[0], points_in[1]] = np.arctan((self.centro_x[points_in[0], points_in[1]] -
                                                                   self.point_d[this_pass, 0])/\
                                                                 (self.point_d[this_pass, 1] -
-                                                                 self.yy[points_in[0], points_in[1]])) + \
+                                                                 self.centro_y[points_in[0], points_in[1]])) + \
                                                                 self.pass_corrections[this_pass]
 
     def calculate_grain_orientation(self, n=10):
@@ -251,15 +255,16 @@ class MINA_weld(object):
         gradient, epitaxial growth and selective growth.
 
         Parameters:
+%load_ext autoreload
         ---
         n: int, how many iterations are allowed for the epitaxial/selective grwoth loop
         """
         # Put NaNs to points not belonging to the weld.
-        self.xx[self.yy < self.get_chamfer_profile(self.xx)] = np.nan
-        self.yy[self.yy < self.get_chamfer_profile(self.xx)] = np.nan
+        self.centro_x[self.centro_y < self.get_chamfer_profile(self.centro_x)] = np.nan
+        self.centro_y[self.centro_y < self.get_chamfer_profile(self.centro_x)] = np.nan
 
         # Find elements belonging to the weld in the lowest layer
-        in_weld = np.where(~np.isnan(self.xx[0, :]))[0]
+        in_weld = np.where(~np.isnan(self.centro_x[0, :]))[0]
         # Copy thermal gradients to grain orientations
         self.grain_orientations = np.copy(self.alpha_g)
         for i in range(1, self.grain_orientations.shape[1] + 1):
@@ -274,6 +279,39 @@ class MINA_weld(object):
                 this_alpha = t*previous_alpha + (1 - t)*self.alpha_g[i, old_grains]
                 previous_alpha = this_alpha
             self.grain_orientations[i, old_grains] = np.copy(this_alpha)
+
+    def solve(self):
+        """Solves the MINA model - a helper method that gathers all
+        required steps in one command"""
+        self.calculate_passes()
+        self.calculate_thermal_gradients()
+        self.calculate_grain_orientation()
+
+    def fill_missing(self):
+        """
+        MINA model leaves grid elements close to the chamfer and the top surface often not
+        assigned. This method fills the missing orientation angles using simple interpolation
+        """
+        identify = np.where(np.isnan(self.grain_orientations) & ~np.isnan(self.centro_x))
+        to_fill = np.c_[identify[0], identify[1]]
+        for which in range(len(to_fill)):
+            if to_fill[which][0] == 0:
+                irange = range(0, 2)
+            elif to_fill[which][0] == self.grain_orientations.shape[0] - 1:
+                irange = range(-1, 1)
+            else:
+                irange = range(-1, 2)
+            if to_fill[which][1] == 0:
+                jrange = range(0, 2)
+            elif to_fill[which][1] == self.grain_orientations.shape[1] - 1:
+                jrange = range(-1, 1)
+            else:
+                jrange = range(-1, 2)
+            neighbours = [(to_fill[which][0] + i, to_fill[which][1] + j) for i in irange for j in jrange]
+            neighbours.remove(tuple(to_fill[which]))
+            neighbours = np.array(neighbours)
+            candidates = self.grain_orientations[np.ix_(neighbours[:, 0], neighbours[:, 1])]
+            self.grain_orientations[to_fill[which][0], to_fill[which][1]] = candidates[~np.isnan(candidates)].mean()
 
     def plot_passes(self, points=False, grid=False):
         """
@@ -321,7 +359,7 @@ class MINA_weld(object):
         if grid:
             ax1.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax1.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
-        ax1.quiver(self.xx, self.yy, np.cos(self.alpha_g + np.pi/2),
+        ax1.quiver(self.centro_x, self.centro_y, np.cos(self.alpha_g + np.pi/2),
                    np.sin(self.alpha_g + np.pi/2), units='xy', scale=scale)
         ax1.set_aspect('equal')
         ax1.set_title('local temperature gradients')
@@ -335,7 +373,7 @@ class MINA_weld(object):
         if grid:
             ax2.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax2.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
-        ax2.quiver(self.xx, self.yy, np.cos(self.grain_orientations + np.pi/2),
+        ax2.quiver(self.centro_x, self.centro_y, np.cos(self.grain_orientations + np.pi/2),
                    np.sin(self.grain_orientations + np.pi/2), units='xy', scale=scale)
         ax2.set_aspect('equal')
         ax2.set_title('final grain orientations')
