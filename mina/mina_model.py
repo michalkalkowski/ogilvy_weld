@@ -255,13 +255,13 @@ class MINA_weld(object):
         gradient, epitaxial growth and selective growth.
 
         Parameters:
-%load_ext autoreload
         ---
         n: int, how many iterations are allowed for the epitaxial/selective grwoth loop
         """
         # Put NaNs to points not belonging to the weld.
-        self.centro_x[self.centro_y < self.get_chamfer_profile(self.centro_x)] = np.nan
-        self.centro_y[self.centro_y < self.get_chamfer_profile(self.centro_x)] = np.nan
+        not_in_weld = self.centro_y < self.get_chamfer_profile(self.centro_x)
+        self.centro_x[not_in_weld] = np.nan
+        self.centro_y[not_in_weld] = np.nan
 
         # Find elements belonging to the weld in the lowest layer
         in_weld = np.where(~np.isnan(self.centro_x[0, :]))[0]
@@ -275,6 +275,8 @@ class MINA_weld(object):
             for iteration in range(n):
                 angle_difference = previous_alpha - self.alpha_g[i, old_grains]
                 t = np.cos(angle_difference)
+				# Tweak angle_difference to avoid NaNs in the comparison
+                angle_difference[np.isnan(angle_difference)] = 0
                 t[angle_difference >= np.pi/2] = 0
                 this_alpha = t*previous_alpha + (1 - t)*self.alpha_g[i, old_grains]
                 previous_alpha = this_alpha
@@ -312,6 +314,26 @@ class MINA_weld(object):
             neighbours = np.array(neighbours)
             candidates = self.grain_orientations[np.ix_(neighbours[:, 0], neighbours[:, 1])]
             self.grain_orientations[to_fill[which][0], to_fill[which][1]] = candidates[~np.isnan(candidates)].mean()
+
+    def get_angle(self, location):
+        """
+        Returns the orientation angle  corresponding to the grid point that
+        encompasses current location.
+
+        Parameters:
+        ---
+        location: ndarray, shape: (3,) an array with coordinates of the location of
+                    interest
+
+        Returns:
+        ---
+        angle: float, orientation angle
+        """
+        mina_grid_centroids = np.c_[self.centro_x.flatten(), self.centro_y.flatten()]
+        which_grid_point = np.nanargmin(np.linalg.norm(mina_grid_centroids -
+            location[1:], axis=1))
+        orientation = self.grain_orientations.flatten()[which_grid_point]
+        return orientation
 
     def plot_passes(self, points=False, grid=False):
         """
