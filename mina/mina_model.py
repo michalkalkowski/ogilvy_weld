@@ -108,7 +108,7 @@ class MINA_weld(object):
 #         if not (0 < value): raise Exception("theta_b parameter should be within the (0, 1) range") 
 #         self._theta_b = value
 
-    def define_grid_size(self, size):
+    def define_grid_size(self, size, use_centroids=False):
         """
         Defines the size of the grid for the MINA model.
 
@@ -126,7 +126,12 @@ class MINA_weld(object):
         # Calculate the centroids
         self.centro_x = ((self.xx[:, :-1] + self.xx[:, 1:])/2)[:-1, :]
         self.centro_y = ((self.yy[:-1, :] + self.yy[1:, :])/2)[:, :-1]
-
+        if use_centroids:
+            self.mesh_x = self.centro_x
+            self.mesh_y = self.centro_y
+        else:
+            self.mesh_x = self.xx
+            self.mesh_y = self.yy
 
     def get_chamfer_profile(self, y):
         """
@@ -236,17 +241,15 @@ class MINA_weld(object):
         """
         Calculates thermal gradients over the defined grid basd on the location of grid centroids.
         """
-#         pass_assignments = -99 + np.zeros(xx.shape)
         # Prefedine array of thermal gradients with NaNs
-        self.alpha_g = np.nan*np.zeros(self.centro_x.shape)
+        self.alpha_g = np.nan*np.zeros(self.mesh_x.shape)
         for this_pass in range(len(self.point_c)):
-            points_in = (np.where((self.centro_y > self.bottom_parabola(self.centro_x, this_pass)) &
-                                  (self.centro_y < self.top_parabola(self.centro_x, this_pass))))
-#             pass_assignments[points_in[0], points_in[1]] = this_pass
-            self.alpha_g[points_in[0], points_in[1]] = np.arctan((self.centro_x[points_in[0], points_in[1]] -
+            points_in = (np.where((self.mesh_y >= self.bottom_parabola(self.mesh_x, this_pass)) &
+                                  (self.mesh_y <= self.top_parabola(self.mesh_x, this_pass))))
+            self.alpha_g[points_in[0], points_in[1]] = np.arctan((self.mesh_x[points_in[0], points_in[1]] -
                                                                   self.point_d[this_pass, 0])/\
                                                                 (self.point_d[this_pass, 1] -
-                                                                 self.centro_y[points_in[0], points_in[1]])) + \
+                                                                 self.mesh_y[points_in[0], points_in[1]])) + \
                                                                 self.pass_corrections[this_pass]
 
     def calculate_grain_orientation(self, n=10):
@@ -259,12 +262,12 @@ class MINA_weld(object):
         n: int, how many iterations are allowed for the epitaxial/selective grwoth loop
         """
         # Put NaNs to points not belonging to the weld.
-        not_in_weld = self.centro_y < self.get_chamfer_profile(self.centro_x)
-        self.centro_x[not_in_weld] = np.nan
-        self.centro_y[not_in_weld] = np.nan
+        not_in_weld = self.mesh_y < self.get_chamfer_profile(self.mesh_x)
+        self.mesh_x[not_in_weld] = np.nan
+        self.mesh_y[not_in_weld] = np.nan
 
         # Find elements belonging to the weld in the lowest layer
-        in_weld = np.where(~np.isnan(self.centro_x[0, :]))[0]
+        in_weld = np.where(~np.isnan(self.mesh_x[0, :]))[0]
         # Copy thermal gradients to grain orientations
         self.grain_orientations = np.copy(self.alpha_g)
         for i in range(1, self.grain_orientations.shape[1] + 1):
@@ -294,7 +297,7 @@ class MINA_weld(object):
         MINA model leaves grid elements close to the chamfer and the top surface often not
         assigned. This method fills the missing orientation angles using simple interpolation
         """
-        identify = np.where(np.isnan(self.grain_orientations) & ~np.isnan(self.centro_x))
+        identify = np.where(np.isnan(self.grain_orientations) & ~np.isnan(self.mesh_x))
         to_fill = np.c_[identify[0], identify[1]]
         for which in range(len(to_fill)):
             if to_fill[which][0] == 0:
@@ -329,8 +332,8 @@ class MINA_weld(object):
         ---
         angle: float, orientation angle
         """
-        mina_grid_centroids = np.c_[self.centro_x.flatten(), self.centro_y.flatten()]
-        which_grid_point = np.nanargmin(np.linalg.norm(mina_grid_centroids -
+        mina_grid_points = np.c_[self.mesh_x.flatten(), self.mesh_y.flatten()]
+        which_grid_point = np.nanargmin(np.linalg.norm(mina_grid_points -
             location[1:], axis=1))
         orientation = self.grain_orientations.flatten()[which_grid_point]
         return orientation
@@ -381,8 +384,15 @@ class MINA_weld(object):
         if grid:
             ax1.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax1.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
-        ax1.quiver(self.centro_x, self.centro_y, np.cos(self.alpha_g + np.pi/2),
-                   np.sin(self.alpha_g + np.pi/2), units='xy', scale=scale)
+        length = 2
+        starters = np.array([
+            weld.mesh_x.flatten() - l/2*np.cos(weld.alpha_g.flatten() + np.pi/2),
+            weld.mesh_y.flatten() - l/2*np.sin(weld.alpha_g.flatten() + np.pi/2)])
+        ends = np.array([
+            weld.mesh_x.flatten() + l/2*np.cos(weld.alpha_g.flatten() + np.pi/2),
+            weld.mesh_y.flatten() + l/2*np.sin(weld.alpha_g.flatten() + np.pi/2)])
+
+        ax1.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
         ax1.set_aspect('equal')
         ax1.set_title('local temperature gradients')
         ax1.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
@@ -395,8 +405,14 @@ class MINA_weld(object):
         if grid:
             ax2.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax2.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
-        ax2.quiver(self.centro_x, self.centro_y, np.cos(self.grain_orientations + np.pi/2),
-                   np.sin(self.grain_orientations + np.pi/2), units='xy', scale=scale)
+        starters = np.array([
+            weld.mesh_x.flatten() - l/2*np.cos(weld.grain_orientations.flatten() + np.pi/2),
+            weld.mesh_y.flatten() - l/2*np.sin(weld.grain_orientations.flatten() + np.pi/2)])
+        ends = np.array([
+            weld.mesh_x.flatten() + l/2*np.cos(weld.grain_orientations.flatten() + np.pi/2),
+            weld.mesh_y.flatten() + l/2*np.sin(weld.grain_orientations.flatten() + np.pi/2)])
+
+        ax2.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
         ax2.set_aspect('equal')
         ax2.set_title('final grain orientations')
         ax2.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
