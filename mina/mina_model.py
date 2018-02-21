@@ -315,7 +315,7 @@ class MINA_weld(object):
             neighbours = [(to_fill[which][0] + i, to_fill[which][1] + j) for i in irange for j in jrange]
             neighbours.remove(tuple(to_fill[which]))
             neighbours = np.array(neighbours)
-            candidates = self.grain_orientations[np.ix_(neighbours[:, 0], neighbours[:, 1])]
+            candidates = self.grain_orientations[neighbours[:, 0], neighbours[:, 1]]
             self.grain_orientations[to_fill[which][0], to_fill[which][1]] = candidates[~np.isnan(candidates)].mean()
 
     def get_angle(self, location):
