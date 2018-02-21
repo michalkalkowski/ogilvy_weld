@@ -386,11 +386,11 @@ class MINA_weld(object):
             ax1.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
         length = 2
         starters = np.array([
-            weld.mesh_x.flatten() - l/2*np.cos(weld.alpha_g.flatten() + np.pi/2),
-            weld.mesh_y.flatten() - l/2*np.sin(weld.alpha_g.flatten() + np.pi/2)])
+            self.mesh_x.flatten() - length/2*np.cos(self.alpha_g.flatten() + np.pi/2),
+            self.mesh_y.flatten() - length/2*np.sin(self.alpha_g.flatten() + np.pi/2)])
         ends = np.array([
-            weld.mesh_x.flatten() + l/2*np.cos(weld.alpha_g.flatten() + np.pi/2),
-            weld.mesh_y.flatten() + l/2*np.sin(weld.alpha_g.flatten() + np.pi/2)])
+            self.mesh_x.flatten() + length/2*np.cos(self.alpha_g.flatten() + np.pi/2),
+            self.mesh_y.flatten() + length/2*np.sin(self.alpha_g.flatten() + np.pi/2)])
 
         ax1.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
         ax1.set_aspect('equal')
@@ -406,11 +406,11 @@ class MINA_weld(object):
             ax2.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax2.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
         starters = np.array([
-            weld.mesh_x.flatten() - l/2*np.cos(weld.grain_orientations.flatten() + np.pi/2),
-            weld.mesh_y.flatten() - l/2*np.sin(weld.grain_orientations.flatten() + np.pi/2)])
+            self.mesh_x.flatten() - length/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
+            self.mesh_y.flatten() - length/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
         ends = np.array([
-            weld.mesh_x.flatten() + l/2*np.cos(weld.grain_orientations.flatten() + np.pi/2),
-            weld.mesh_y.flatten() + l/2*np.sin(weld.grain_orientations.flatten() + np.pi/2)])
+            self.mesh_x.flatten() + length/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
+            self.mesh_y.flatten() + length/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
 
         ax2.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
         ax2.set_aspect('equal')
