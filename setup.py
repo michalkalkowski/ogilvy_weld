@@ -5,7 +5,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 setup(
-    name="mina-weld",
+    name="mina",
     description="An implementation of the MINA model for multipass austenitic steel welds",
     author="Michal K Kalkowski",
     author_email="m.kalkowski@imperial.ac.uk",
