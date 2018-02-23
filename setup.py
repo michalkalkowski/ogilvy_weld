@@ -6,10 +6,11 @@ def read(fname):
 
 setup(
     name="mina",
+    version="0.0.1",
     description="An implementation of the MINA model for multipass austenitic steel welds",
     author="Michal K Kalkowski",
     author_email="m.kalkowski@imperial.ac.uk",
     packages=find_packages(exclude=['data', 'references', 'output', 'notebooks']),
     long_description=read('README.md'),
-    license='MIT'
+    license='MIT',
 )
