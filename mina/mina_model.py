@@ -370,9 +370,9 @@ class MINA_weld(object):
         ax.set_xlabel(r'$y$ in mm')
         ax.set_ylabel(r'$z$ in mm')
 
-    def plot_grain_orientations(self, scale=0.5, grid=False):
+    def plot_temp_gradients(self, scale=2, grid=False):
         """
-        Plots both thermal gradients and final grain orientations.
+        Plots thermal gradients.
 
 	Parameters:
 	---
@@ -380,44 +380,56 @@ class MINA_weld(object):
 		and vice versa
 	grid: boolean, if True, the MINA grid is also plotted.
         """
-        fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True, figsize=(8, 4))
+        fig, ax = plt.subplots(figsize=(4, 4))
         if grid:
-            ax1.plot(self.xx, self.yy, lw=0.5, c='gray')
-            ax1.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
-        length = 2
+            ax.plot(self.xx, self.yy, lw=0.5, c='gray')
+            ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
         starters = np.array([
-            self.mesh_x.flatten() - length/2*np.cos(self.alpha_g.flatten() + np.pi/2),
-            self.mesh_y.flatten() - length/2*np.sin(self.alpha_g.flatten() + np.pi/2)])
+            self.mesh_x.flatten() - scale/2*np.cos(self.alpha_g.flatten() + np.pi/2),
+            self.mesh_y.flatten() - scale/2*np.sin(self.alpha_g.flatten() + np.pi/2)])
         ends = np.array([
-            self.mesh_x.flatten() + length/2*np.cos(self.alpha_g.flatten() + np.pi/2),
-            self.mesh_y.flatten() + length/2*np.sin(self.alpha_g.flatten() + np.pi/2)])
+            self.mesh_x.flatten() + scale/2*np.cos(self.alpha_g.flatten() + np.pi/2),
+            self.mesh_y.flatten() + scale/2*np.sin(self.alpha_g.flatten() + np.pi/2)])
 
-        ax1.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
-        ax1.set_aspect('equal')
-        ax1.set_title('local temperature gradients')
-        ax1.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
-        ax1.plot([self.b/2, self.c/2], [0, self.a], lw=0.5, c='gray')
-        ax1.plot([-1.2*self.c/2, 1.2*self.c/2], [0, 0], lw=0.5, c='gray')
-        ax1.plot([-1.2*self.c/2, 1.2*self.c/2], [self.a, self.a], lw=0.5, c='gray')
-        ax1.set_xlabel(r'$y$ in mm')
-        ax1.set_ylabel(r'$z$ in mm')
+        ax.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
+        ax.set_aspect('equal')
+        ax.set_title('local temperature gradients')
+        ax.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
+        ax.plot([self.b/2, self.c/2], [0, self.a], lw=0.5, c='gray')
+        ax.plot([-1.2*self.c/2, 1.2*self.c/2], [0, 0], lw=0.5, c='gray')
+        ax.plot([-1.2*self.c/2, 1.2*self.c/2], [self.a, self.a], lw=0.5, c='gray')
+        ax.set_xlabel(r'$y$ in mm')
+        ax.set_ylabel(r'$z$ in mm')
 
+        plt.tight_layout()
+
+    def plot_grain_orientations(self, scale=2, grid=False):
+        """
+        Plots final grain orientations.
+
+	Parameters:
+	---
+	scale: float, scale parameter for the plt.quiver command. Smaller scale - larger arrows
+		and vice versa
+	grid: boolean, if True, the MINA grid is also plotted.
+        """
+        fig, ax = plt.subplots(figsize=(4, 4))
         if grid:
-            ax2.plot(self.xx, self.yy, lw=0.5, c='gray')
-            ax2.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
+            ax.plot(self.xx, self.yy, lw=0.5, c='gray')
+            ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
         starters = np.array([
-            self.mesh_x.flatten() - length/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
-            self.mesh_y.flatten() - length/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
+            self.mesh_x.flatten() - scale/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
+            self.mesh_y.flatten() - scale/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
         ends = np.array([
-            self.mesh_x.flatten() + length/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
-            self.mesh_y.flatten() + length/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
+            self.mesh_x.flatten() + scale/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
+            self.mesh_y.flatten() + scale/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
 
-        ax2.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
-        ax2.set_aspect('equal')
-        ax2.set_title('final grain orientations')
-        ax2.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
-        ax2.plot([self.b/2, self.c/2], [0, self.a], lw=0.5, c='gray')
-        ax2.plot([-1.2*self.c/2, 1.2*self.c/2], [0, 0], lw=0.5, c='gray')
-        ax2.plot([-1.2*self.c/2, 1.2*self.c/2], [self.a, self.a], lw=0.5, c='gray')
-        ax2.set_xlabel(r'$y$ in mm')
+        ax.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
+        ax.set_aspect('equal')
+        ax.set_title('grain orientations')
+        ax.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
+        ax.plot([self.b/2, self.c/2], [0, self.a], lw=0.5, c='gray')
+        ax.plot([-1.2*self.c/2, 1.2*self.c/2], [0, 0], lw=0.5, c='gray')
+        ax.plot([-1.2*self.c/2, 1.2*self.c/2], [self.a, self.a], lw=0.5, c='gray')
+        ax.set_xlabel(r'$y$ in mm')
         plt.tight_layout()
