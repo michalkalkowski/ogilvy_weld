@@ -432,4 +432,5 @@ class MINA_weld(object):
         ax.plot([-1.2*self.c/2, 1.2*self.c/2], [0, 0], lw=0.5, c='gray')
         ax.plot([-1.2*self.c/2, 1.2*self.c/2], [self.a, self.a], lw=0.5, c='gray')
         ax.set_xlabel(r'$y$ in mm')
+        ax.set_ylabel(r'$z$ in mm')
         plt.tight_layout()
