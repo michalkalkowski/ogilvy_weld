@@ -116,6 +116,7 @@ class MINA_weld(object):
         ---
         size: int, grid size in milimetres
         """
+        self.use_centroids = use_centroids
         self.grid_size = float(size)
         elements_x = int(np.ceil(self.c/self.grid_size))
         elements_y = int(np.ceil(self.a/self.grid_size))
@@ -415,8 +416,11 @@ class MINA_weld(object):
         """
         fig, ax = plt.subplots(figsize=(6, 6))
         if grid:
-            ax.plot(self.xx, self.yy, lw=0.5, c='gray')
-            ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
+            if self.use_centroids:
+                ax.plot(self.xx, self.yy, lw=0.5, c='gray')
+                ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
+            else:
+                ax.plot(self.xx, self.yy, 'o', ms=2, c='gray')
         starters = np.array([
             self.mesh_x.flatten() - scale/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
             self.mesh_y.flatten() - scale/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
