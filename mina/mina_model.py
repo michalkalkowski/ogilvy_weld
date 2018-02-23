@@ -380,7 +380,7 @@ class MINA_weld(object):
 		and vice versa
 	grid: boolean, if True, the MINA grid is also plotted.
         """
-        fig, ax = plt.subplots(figsize=(4, 4))
+        fig, ax = plt.subplots(figsize=(6, 6))
         if grid:
             ax.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
@@ -413,7 +413,7 @@ class MINA_weld(object):
 		and vice versa
 	grid: boolean, if True, the MINA grid is also plotted.
         """
-        fig, ax = plt.subplots(figsize=(4, 4))
+        fig, ax = plt.subplots(figsize=(6, 6))
         if grid:
             ax.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
