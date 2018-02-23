@@ -3,7 +3,7 @@ channels: !!python/tuple
 - conda-forge
 - defaults
 dependencies:
-- conda-forge::upython
+- conda-forge::ipython
 - conda-forge::jupyter
 - conda-forge::matplotlib
 - conda-forge::python
