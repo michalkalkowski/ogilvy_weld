@@ -162,16 +162,19 @@ class MINA_weld(object):
                                     + self.remelt_v*self.electrode_diameter)))/\
                         (self.number_of_passes*(1 - self.remelt_h) + self.remelt_h)
 
-        layer_width = self.pass_width*((1 - self.remelt_h)*self.number_of_passes +
+        self.layer_width = self.pass_width*((1 - self.remelt_h)*self.number_of_passes +
                                   self.remelt_h)
 
         # Calculate centres of each pass
         pass_y_abscissa = np.cumsum(self.layer_thickness*np.array([1] +
                                                              [1 - self.remelt_v]*(len(self.layer_thickness) - 1)))
-        pass_x_ordinates = np.cumsum(self.pass_width.reshape(-1, 1)*\
-                                     np.array([0.5] +
-                                              [1 - self.remelt_h]*self.number_of_passes.max()).reshape(1, -1),
-                                    axis=1)
+        pass_y_abscissa = np.cumsum(self.layer_thickness*np.array(
+                            [1 - self.remelt_v]*len(self.layer_thickness))) +\
+                            self.remelt_v*self.layer_thickness
+        pass_x_ordinates = (1 - self.remelt_h)*\
+                        np.arange(self.number_of_passes.max()).reshape(1,-1)*\
+                        self.pass_width.reshape(-1, 1) +\
+                        self.pass_width.reshape(-1, 1)/2 - self.layer_width.reshape(-1, 1)/2
         # Assemble arrays of pass centre coordinates
         # and calculate orientation angle corrections based on electrode tilt
         pass_x_centers = []
@@ -186,7 +189,7 @@ class MINA_weld(object):
             self.pass_corrections.extend(this_pass_corrections)
             pass_counter += passes
             pass_y_centers.extend([pass_y_abscissa[i]]*passes)
-            pass_x_centers.extend(list(pass_x_ordinates[i, :passes] - layer_width[i]/2))
+            pass_x_centers.extend(list(pass_x_ordinates[i, :passes]))
 
         # Construct a look-up dictionary telling which pass belongs to which layer
         self.layer_of_pass = dict()
