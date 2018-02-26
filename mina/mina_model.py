@@ -351,7 +351,7 @@ class MINA_weld(object):
         points: boolean, if True, plots also the characteristic points of passes (see Moysan, 2003)
 	grid: boolean, if True, the MINA grid is also plotted.
         """
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(5, 5))
         for i in range(len(self.point_b)):
             local_x = np.linspace(self.point_b[i, 0] -
                                   self.pass_width[self.layer_of_pass[i]]/2,
@@ -384,7 +384,7 @@ class MINA_weld(object):
 		and vice versa
 	grid: boolean, if True, the MINA grid is also plotted.
         """
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(5, 5))
         if grid:
             ax.plot(self.xx, self.yy, lw=0.5, c='gray')
             ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
@@ -417,13 +417,13 @@ class MINA_weld(object):
 		and vice versa
 	grid: boolean, if True, the MINA grid is also plotted.
         """
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(5, 5))
         if grid:
             if self.use_centroids:
-                ax.plot(self.xx, self.yy, lw=0.5, c='gray')
-                ax.plot(self.xx.T, self.yy.T, lw=0.5, c='gray')
+                ax.plot(self.xx, self.yy, lw=0.5, c='lightgray')
+                ax.plot(self.xx.T, self.yy.T, lw=0.5, c='lightgray')
             else:
-                ax.plot(self.xx, self.yy, 'o', ms=2, c='gray')
+                ax.plot(self.xx, self.yy, 'o', ms=2, c='lightgray')
         starters = np.array([
             self.mesh_x.flatten() - scale/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
             self.mesh_y.flatten() - scale/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
@@ -431,7 +431,8 @@ class MINA_weld(object):
             self.mesh_x.flatten() + scale/2*np.cos(self.grain_orientations.flatten() + np.pi/2),
             self.mesh_y.flatten() + scale/2*np.sin(self.grain_orientations.flatten() + np.pi/2)])
 
-        ax.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]])
+        ax.plot([starters[0, :], ends[0, :]], [starters[1, :], ends[1, :]],
+                c='black')
         ax.set_aspect('equal')
         ax.set_title('grain orientations')
         ax.plot([-self.b/2, -self.c/2], [0, self.a], lw=0.5, c='gray')
