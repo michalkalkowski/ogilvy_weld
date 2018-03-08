@@ -185,7 +185,8 @@ class MINA_weld(object):
         for i, passes in enumerate(list(self.number_of_passes)):
             passes_in_layer.update({i: (list(range(pass_counter, pass_counter + passes)))})
             this_pass_corrections = (int(passes) > 1)*[-self.theta_b] + \
-                                    [-self.theta_c]*(int(passes) - 2)*(int(passes) > 2) + [0]
+                                    [-self.theta_c]*(int(passes) - 2)*(int(passes) > 2) + \
+                                    [0]
             self.pass_corrections.extend(this_pass_corrections)
             pass_counter += passes
             pass_y_centers.extend([pass_y_abscissa[i]]*passes)
@@ -256,7 +257,7 @@ class MINA_weld(object):
                                                                  self.mesh_y[points_in[0], points_in[1]])) + \
                                                                 self.pass_corrections[this_pass]
 
-    def calculate_grain_orientation(self, n=10):
+    def calculate_grain_orientation(self, n=11):
         """
         Calculates final grain orientations accounting for the effect of the temperature
         gradient, epitaxial growth and selective growth.
@@ -265,10 +266,33 @@ class MINA_weld(object):
         ---
         n: int, how many iterations are allowed for the epitaxial/selective grwoth loop
         """
+        self.grain_orientations = np.nan*np.zeros(self.alpha_g.shape)
         # Put NaNs to points not belonging to the weld.
         not_in_weld = self.mesh_y < self.get_chamfer_profile(self.mesh_x)
         self.mesh_x[not_in_weld] = np.nan
         self.mesh_y[not_in_weld] = np.nan
+#         # Calculate starting orientations for each pass
+#         for this_pass in range(len(self.point_o)):
+#             if this_pass == 0:
+#                 alpha_0 = 0
+#             else:
+#                 mina_grid_points = np.c_[self.mesh_x.flatten(), self.mesh_y.flatten()]
+#                 which_grid_point = np.nanargmin(np.linalg.norm(mina_grid_points -
+#                                    self.point_o[this_pass], axis=1))
+#                 alpha_0 = self.grain_orientations.flatten()[which_grid_point]
+#             points_in = (np.where((self.mesh_y >= self.bottom_parabola(self.mesh_x, this_pass)) &
+#                                   (self.mesh_y <= self.top_parabola(self.mesh_x, this_pass))))
+#             previous_alpha = alpha_0
+#             for iteration in range(n):
+#                 angle_difference =  previous_alpha - self.alpha_g[points_in[0],
+#                                     points_in[1]]
+#                 t = np.cos(angle_difference)
+#                 # Tweak angle_difference to avoid NaNs in the comparison
+#                 angle_difference[np.isnan(angle_difference)] = 0
+#                 t[angle_difference >= np.pi/2] = 0
+#                 this_alpha = t*previous_alpha + (1 - t)*self.alpha_g[points_in[0], points_in[1]]
+#                 previous_alpha = this_alpha
+#             self.grain_orientations[points_in[0], points_in[1]] = np.copy(this_alpha)
 
         # Find elements belonging to the weld in the lowest layer
         in_weld = np.where(~np.isnan(self.mesh_x[0, :]))[0]
@@ -334,13 +358,78 @@ class MINA_weld(object):
 
         Returns:
         ---
-        angle: float, orientation angle
+        angle: float, orientation angle (with respect to the vertical.
         """
         mina_grid_points = np.c_[self.mesh_x.flatten(), self.mesh_y.flatten()]
         which_grid_point = np.nanargmin(np.linalg.norm(mina_grid_points -
             location[1:], axis=1))
         orientation = self.grain_orientations.flatten()[which_grid_point]
         return orientation
+
+    def get_ficticious_interface_angle(self, coordinates):
+
+        mina_grid_centroids = np.c_[self.mesh_x.flatten(),
+                                    self.mesh_y.flatten()]
+        # Find the closest grid centroid (flattened)
+        which_grid_point = np.nanargmin(np.linalg.norm(mina_grid_centroids -
+            coordinates[1:], axis=1))
+        #  recast the flattened index to original dimensions
+        point = np.unravel_index(which_grid_point, dims=self.mesh_x.shape)
+        i, j = point
+        # Extract neogbouring MINA grid angles
+        cycle_angles = np.array([0, np.pi/4, np.pi/2, 3*np.pi/4, np.pi])
+        central_orientation = self.grain_orientations[point[0], point[1]]
+        padded = np.nan*np.zeros([self.grain_orientations.shape[0] + 2,
+                                  self.grain_orientations.shape[1] + 2])
+        padded[1:-1, 1:-1] = np.copy(self.grain_orientations)
+        irange = [0, 1, 1, 1, 0] #[0, 1, 1, 1, 0, -1, -1, -1] 
+        jrange = [1, 1, 0, -1, -1]
+        if i  < self.grain_orientations.shape[0] - 1:
+            neighbours = [(point[0] + iterator_i, point[1] + iterator_j) for
+                    iterator_i, iterator_j in zip(irange, jrange)]
+            grid_angles = cycle_angles
+        else:
+            neighbours = [(point[0] - iterator_i, point[1] + iterator_j) for
+                    iterator_i, iterator_j in zip(irange, jrange)]
+            grid_angles = cycle_angles[::-1]
+
+        neighbours = np.array(neighbours)
+        central_orientation = (central_orientation)
+        neighbouring_angles = (padded[neighbours[:, 0] + 1,
+            neighbours[:, 1] + 1])
+        # estimate the angle based on a linear interpolationl
+        # check where grain orientations are nans
+        # not_nans = ~np.isnan(neighbouring_angles)
+        # interpolator = interp1d(neighbouring_angles[not_nans],
+        #         cycle_angles[not_nans],
+        #         fill_value='extrapolate')
+        # interface_angle = interpolator(central_orientation)
+
+        # another attempt
+        neighbouring_angles[np.isnan(neighbouring_angles)] = np.pi/2
+        l_angle = neighbouring_angles[0]
+        c_angle = neighbouring_angles[2]
+        u_angle = neighbouring_angles[4]
+
+        # check if surrounding orientations are relatively similar to the central
+        distance = abs(central_orientation - neighbouring_angles)
+        no_of_odds = np.sum(distance > np.pi/8)
+        if no_of_odds == 4:
+            interface_angle = cycle_angles[np.where(distance < np.pi/8)[0][0]]
+        else:
+            greater_flag = central_orientation > neighbouring_angles
+            upper_bound = np.where(greater_flag == ~greater_flag[0])[0]
+            if len(upper_bound) > 0:
+                upper_bound = upper_bound[0]
+                lower_bound = upper_bound - 1
+                frac = (central_orientation - neighbouring_angles[lower_bound])/\
+                        (neighbouring_angles[upper_bound] - neighbouring_angles[lower_bound])
+                interface_angle = cycle_angles[lower_bound] + np.pi/4*frac
+            else:
+                closest = np.nanargmin(distance)
+                interface_angle = cycle_angles[closest]
+        return interface_angle
+
 
     def plot_passes(self, points=False, grid=False):
         """
