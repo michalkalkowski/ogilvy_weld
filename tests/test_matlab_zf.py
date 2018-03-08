@@ -26,7 +26,7 @@ weld_parameters = dict([('remelt_h', 0.362),
                         ('b', 4),
                         ('c', 40)])
 weld = mina.MINA_weld(weld_parameters)
-weld.define_grid_size(1.)
+weld.define_grid_size(1., use_centroids=True)
 weld.solve()
 #weld.fill_missing()
 
