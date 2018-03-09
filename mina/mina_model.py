@@ -298,7 +298,7 @@ class MINA_weld(object):
         in_weld = np.where(~np.isnan(self.mesh_x[0, :]))[0]
         # Copy thermal gradients to grain orientations
         self.grain_orientations = np.copy(self.alpha_g)
-        for i in range(1, self.grain_orientations.shape[1] + 1):
+        for i in range(1, self.grain_orientations.shape[0]):
             new_starters = np.where(np.isnan(self.grain_orientations[i - 1, :]))[0]
             old_grains = np.where(~np.isnan(self.grain_orientations[i - 1, :]))[0]
             self.grain_orientations[i, new_starters]= self.alpha_g[i, new_starters]
@@ -313,12 +313,12 @@ class MINA_weld(object):
                 previous_alpha = this_alpha
             self.grain_orientations[i, old_grains] = np.copy(this_alpha)
 
-    def solve(self):
+    def solve(self, n=11):
         """Solves the MINA model - a helper method that gathers all
         required steps in one command"""
         self.calculate_passes()
         self.calculate_thermal_gradients()
-        self.calculate_grain_orientation()
+        self.calculate_grain_orientation(n)
 
     def fill_missing(self):
         """
