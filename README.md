@@ -1,7 +1,7 @@
 MINA
 ==============================
 
-An implementation of the MINA model for predicting grain orientation in austenitic stainless steel multipass welds
+An implementation of the geometrical Ogilvy's model for predicting grain orientation in austenitic stainless steel multipass welds
 
 Project Organization
 ------------
@@ -27,6 +27,9 @@ Project Organization
 --------
 Setup
 --------
+`ogilvy_weld` is used in the same environment as `mina_weld`. To keep things
+simple, `mina_weld` environment is used for both. 
+
 1. Install the virtual environment:
 ```bash
 $ conda env create -f environment.yml
