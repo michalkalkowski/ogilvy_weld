@@ -167,7 +167,8 @@ class Ogilvy_weld(object):
         self.mina_grid_points = np.c_[self.mesh_x_strict.flatten(),
                                  self.mesh_y_strict.flatten()]
         self.grain_orientations_full = np.copy(self.grain_orientations)
-
+        self.grain_orientations = self.grain_orientations_full[self.in_weld == 1].flatten()
+        
         # self.grain_orientations = self.grain_orientations[~np.isnan(self.grain_orientations)]
         self.mina_grid_points = self.mina_grid_points[~np.isnan(self.mina_grid_points).any(axis=1)]
         # cells_above = np.where(self.mina_grid_points[:, 1] > self.a)[0]
