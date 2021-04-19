@@ -167,7 +167,6 @@ class Ogilvy_weld(object):
         self.mina_grid_points = np.c_[self.mesh_x_strict.flatten(),
                                  self.mesh_y_strict.flatten()]
         self.grain_orientations_full = np.copy(self.grain_orientations)
-        self.grain_orientations = self.grain_orientations[self.in_weld == 1].flatten()
 
         # self.grain_orientations = self.grain_orientations[~np.isnan(self.grain_orientations)]
         self.mina_grid_points = self.mina_grid_points[~np.isnan(self.mina_grid_points).any(axis=1)]
@@ -209,7 +208,8 @@ class Ogilvy_weld(object):
                 mean_orient = np.nanmean(neighbours)
                 self.grain_orientations_full[nan_cells[0][nan_cell],
                                             nan_cells[1][nan_cell]] = mean_orient
- 
+
+        self.grain_orientations = self.grain_orientations_full[self.in_weld == 1].flatten()
 
     def get_angle(self, location):
         """
